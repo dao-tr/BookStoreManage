@@ -3,6 +3,7 @@ from app.models import User, Category, Book, Receipt, ReceiptDetail, ImportRecei
 from sqlalchemy import func, extract
 from datetime import datetime, timedelta
 import hashlib
+from sqlalchemy import or_
 
 
 def get_rule():
@@ -31,10 +32,18 @@ def load_categories():
 
 def load_books(kw=None, category_id=None):
     query = Book.query.filter(Book.active.__eq__(True))
-    if kw:
-        query = query.filter(Book.name.contains(kw) | Book.barcode.contains(kw))
+
     if category_id:
-        query = query.filter(Book.category_id == int(category_id))
+        query = query.filter(Book.category_id.__eq__(int(category_id)))
+
+    if kw:
+        kw = kw.strip()
+        query = query.filter(or_(
+            Book.name.contains(kw),
+            Book.author.contains(kw),
+            Book.barcode.contains(kw)
+        ))
+
     return query.all()
 
 

@@ -26,6 +26,7 @@ def common_response():
 
 
 @app.route('/')
+@app.route('/')
 def index():
     kw = request.args.get('kw')
     category_id = request.args.get('category_id')

@@ -3,6 +3,13 @@
 {% block content %}
 <h2 class="text-center text-info font-weight-bold my-4">DANH MỤC SÁCH</h2>
 
+{% if request.args.get('kw') %}
+<p class="text-muted">
+    Kết quả tìm kiếm: <strong>"{{ request.args.get('kw') }}"</strong>
+    (<a href="/">Xóa bộ lọc</a>)
+</p>
+{% endif %}
+
 <div class="row">
     {% for b in books %}
     <div class="col-md-3 mb-4">
@@ -12,7 +19,7 @@
                 <h5 class="card-title text-dark">{{ b.name }}</h5>
                 <p class="text-muted small mb-1">Tác giả: {{ b.author }}</p>
                 <p class="card-text text-danger font-weight-bold h5 mb-3">{{ "{:,.0f}".format(b.price) }} VNĐ</p>
-                
+
                 <div class="mt-auto">
                     {% if b.quantity > 0 %}
                     <button class="btn btn-success btn-block" onclick="addToCart({{ b.id }}, '{{ b.name }}', {{ b.price }})">
@@ -27,7 +34,7 @@
     </div>
     {% else %}
     <div class="col-12 text-center alert alert-warning">
-        Không tìm thấy cuốn sách nào!
+        Không tìm thấy sách!
     </div>
     {% endfor %}
 </div>
