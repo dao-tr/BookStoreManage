@@ -1,0 +1,71 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<h2 class="text-center text-primary my-4">GIỎ HÀNG & ĐẶT SÁCH ONLINE</h2>
+
+{% if 'cart' in session and session['cart'] %}
+<table class="table table-bordered text-center">
+    <thead class="thead-light">
+        <tr>
+            <th>Mã sách</th>
+            <th>Tên sách</th>
+            <th>Đơn giá</th>
+            <th style="width: 150px;">Số lượng</th>
+            <th>Xóa</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in session['cart'].values() %}
+        <tr id="book{{ c.id }}">
+            <td>{{ c.id }}</td>
+            <td>{{ c.name }}</td>
+            <td>{{ "{:,.0f}".format(c.price) }} VNĐ</td>
+            <td>
+                <input type="number" value="{{ c.quantity }}" min="1"
+                       onblur="updateCart({{ c.id }}, this)" class="form-control text-center" />
+            </td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteCart({{ c.id }})">Xóa</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="alert alert-warning">
+    <strong>Quy định đặt sách:</strong> Đối với đơn đặt sách chờ nhận tại nhà sách, nếu sau <strong>48 tiếng</strong> từ thời điểm đặt sách bạn không đến lấy sách và thanh toán thì đơn hàng sẽ tự động bị huỷ.
+</div>
+
+<div class="card p-3 mb-4">
+    <h5>Chọn hình thức nhận sách & thanh toán:</h5>
+    <div class="form-check mb-2">
+        <input class="form-check-input" type="radio" name="payment_method" id="pmStore" value="CASH_AT_STORE" checked>
+        <label class="form-check-label" for="pmStore">
+            Đến nhà sách nhận sách và thanh toán trực tiếp (Giữ đơn trong 48 tiếng)
+        </label>
+    </div>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="radio" name="payment_method" id="pmOnline" value="ONLINE_FREE_SHIP">
+        <label class="form-check-label text-success font-weight-bold" for="pmOnline">
+            Thanh toán Online
+        </label>
+    </div>
+
+    <div class="form-group">
+        <label>Địa chỉ nhận hàng:</label>
+        <input type="text" id="delivery_address" class="form-control" placeholder="Nhập địa chỉ nhận sách..." />
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <h4>Tổng thanh toán: <span class="text-danger cart-amount">{{ "{:,.0f}".format(cart_stats.total_amount) }}</span> VNĐ</h4>
+        {% if current_user.is_authenticated %}
+        <button class="btn btn-success btn-lg" onclick="pay()">Xác Nhận Đặt Sách</button>
+        {% else %}
+        <a href="/login?next=/cart" class="btn btn-primary">Vui lòng đăng nhập để đặt sách</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info text-center">Giỏ hàng đang trống!</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container mt-3">
+    <h2 class="text-center text-primary font-weight-bold">PHIẾU NHẬP SÁCH</h2>
+
+    {% if err_msg %}
+    <div class="alert alert-danger">{{ err_msg }}</div>
+    {% endif %}
+    {% if success_msg %}
+    <div class="alert alert-success">{{ success_msg }}</div>
+    {% endif %}
+
+    <div class="alert alert-info">
+        <strong>Quy định:</strong> Số lượng nhập ít nhất <strong>{{ rule.min_import_quantity }}</strong>,
+        chỉ nhập những đầu sách có số lượng tồn kho ít hơn <strong>{{ rule.max_stock_to_import }}</strong>.
+    </div>
+
+    <form method="post" id="importForm" onsubmit="return validateImportForm()">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white text-center">
+                <strong>Ngày nhập:</strong> {{ now.strftime('%d/%m/%Y %H:%M') }}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0 text-center" id="importTable">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 60px;">STT</th>
+                            <th>Sách</th>
+                            <th>Thể loại</th>
+                            <th>Tác giả</th>
+                            <th style="width: 180px;">Số lượng</th>
+                            <th style="width: 80px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="importBody">
+                        <tr>
+                            <td class="stt">1</td>
+                            <td>
+                                <select name="book_id[]" class="form-control book-select" onchange="updateBookInfo(this)" required>
+                                    <option value="">-- Chọn sách (Tồn &lt; {{ rule.max_stock_to_import }}) --</option>
+                                    {% for b in eligible_books %}
+                                    <option value="{{ b.id }}"
+                                            data-category="{{ b.category.name }}"
+                                            data-author="{{ b.author }}"
+                                            data-stock="{{ b.quantity }}">
+                                        {{ b.name }} (Tồn: {{ b.quantity }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td class="category-cell align-middle">-</td>
+                            <td class="author-cell align-middle">-</td>
+                            <td>
+                                <input type="number" name="quantity[]" class="form-control qty-input"
+                                       min="{{ rule.min_import_quantity }}" value="{{ rule.min_import_quantity }}" required />
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">X</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" onclick="addImportRow()">+ Thêm dòng sách</button>
+                <button type="submit" class="btn btn-primary font-weight-bold">Lưu Phiếu Nhập Kho</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const MIN_IMPORT = {{ rule.min_import_quantity }};
+
+    function updateBookInfo(selectElem) {
+        let row = selectElem.closest('tr');
+        let opt = selectElem.options[selectElem.selectedIndex];
+        row.querySelector('.category-cell').innerText = opt.dataset.category || '-';
+        row.querySelector('.author-cell').innerText = opt.dataset.author || '-';
+    }
+
+    function reIndexRows() {
+        document.querySelectorAll('#importBody tr').forEach((tr, idx) => {
+            tr.querySelector('.stt').innerText = idx + 1;
+        });
+    }
+
+    function addImportRow() {
+        let tbody = document.getElementById('importBody');
+        let firstRow = tbody.querySelector('tr');
+        let newRow = firstRow.cloneNode(true);
+        newRow.querySelector('.book-select').value = '';
+        newRow.querySelector('.category-cell').innerText = '-';
+        newRow.querySelector('.author-cell').innerText = '-';
+        newRow.querySelector('.qty-input').value = MIN_IMPORT;
+        tbody.appendChild(newRow);
+        reIndexRows();
+    }
+
+    function removeRow(btn) {
+        let tbody = document.getElementById('importBody');
+        if (tbody.querySelectorAll('tr').length > 1) {
+            btn.closest('tr').remove();
+            reIndexRows();
+        } else {
+            alert('Phiếu nhập phải có ít nhất 1 dòng!');
+        }
+    }
+
+    function validateImportForm() {
+        let inputs = document.querySelectorAll('.qty-input');
+        for (let inp of inputs) {
+            if (parseInt(inp.value) < MIN_IMPORT) {
+                alert(`Số lượng nhập tối thiểu phải từ ${MIN_IMPORT} trở lên!`);
+                return false;
+            }
+        }
+        return true;
+    }
+</script>
+{% endblock %}

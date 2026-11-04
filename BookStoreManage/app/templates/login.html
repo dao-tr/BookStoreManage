@@ -1,0 +1,30 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center font-weight-bold">
+                <h4>ĐĂNG NHẬP HỆ THỐNG</h4>
+            </div>
+            <div class="card-body">
+                {% if err_msg %}
+                <div class="alert alert-danger">{{ err_msg }}</div>
+                {% endif %}
+                
+                <form method="post">
+                    <div class="form-group">
+                        <label class="font-weight-bold">Tên đăng nhập:</label>
+                        <input type="text" name="username" class="form-control" placeholder="Nhập tên đăng nhập..." required />
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">Mật khẩu:</label>
+                        <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu..." required />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block font-weight-bold mt-4">ĐĂNG NHẬP</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

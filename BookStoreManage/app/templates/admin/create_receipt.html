@@ -1,0 +1,187 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container mt-3">
+    <h2 class="text-center text-success font-weight-bold">HOÁ ĐƠN BÁN SÁCH</h2>
+
+    {% if err_msg %}
+    <div class="alert alert-danger">{{ err_msg }}</div>
+    {% endif %}
+    {% if success_msg %}
+    <div class="alert alert-success">{{ success_msg }}</div>
+    {% endif %}
+
+    <!-- quét mã vạch -->
+    <div class="form-group row bg-light p-3 border rounded mb-3">
+        <label class="col-sm-3 col-form-label font-weight-bold text-primary">
+            Quét mã vạch (Barcode):
+        </label>
+        <div class="col-sm-6">
+            <input type="text" id="barcodeInput" class="form-control"
+                   placeholder="Đặt con trỏ vào đây và quét mã vạch sách (hoặc nhập mã rồi nhấn Enter)..." autofocus />
+        </div>
+        <div class="col-sm-3">
+            <button type="button" class="btn btn-info btn-block" onclick="scanBarcode()">Thêm theo mã</button>
+        </div>
+    </div>
+
+    <form method="post">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Họ tên khách hàng:</strong>
+                        <input type="text" name="customer_name" class="form-control d-inline-block w-50 ml-2"
+                               placeholder="Nhập tên khách hàng..." required />
+                    </div>
+                    <div class="col-md-6 text-right align-self-center">
+                        <strong>Ngày lập hoá đơn:</strong> {{ now.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0 text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 60px;">STT</th>
+                            <th>Sách</th>
+                            <th>Thể loại</th>
+                            <th style="width: 150px;">Số lượng</th>
+                            <th style="width: 180px;">Đơn giá</th>
+                            <th style="width: 80px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receiptBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>Nhân viên thanh toán:</strong> {{ current_user.name }}
+                    </div>
+                    <div class="h5 text-danger mb-0">
+                        Tổng tiền: <span id="totalBill">0</span> VNĐ
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" onclick="addManualRow()">+ Chọn sách thủ công</button>
+                    <button type="submit" class="btn btn-success font-weight-bold">Xuất Hoá Đơn & Thanh Toán</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    const BOOKS_DATA = [
+        {% for b in books %}
+        {
+            id: {{ b.id }},
+            barcode: "{{ b.barcode }}",
+            name: "{{ b.name }}",
+            category: "{{ b.category.name }}",
+            price: {{ b.price }},
+            stock: {{ b.quantity }}
+        },
+        {% endfor %}
+    ];
+
+    // Bắt sự kiện Enter từ máy quét mã vạch
+    document.getElementById('barcodeInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            scanBarcode();
+        }
+    });
+
+    function scanBarcode() {
+        let code = document.getElementById('barcodeInput').value.trim();
+        if (!code) return;
+
+        fetch(`/api/barcode/${code}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 200) {
+                    addOrIncrementBookRow(data.book);
+                    document.getElementById('barcodeInput').value = '';
+                    document.getElementById('barcodeInput').focus();
+                } else {
+                    alert(data.err_msg);
+                }
+            });
+    }
+
+    function addOrIncrementBookRow(book) {
+        let existingRow = document.querySelector(`#receiptBody tr[data-book-id="${book.id}"]`);
+        if (existingRow) {
+            let qtyInput = existingRow.querySelector('.qty-input');
+            qtyInput.value = parseInt(qtyInput.value) + 1;
+            calcTotal();
+            return;
+        }
+
+        let tbody = document.getElementById('receiptBody');
+        let tr = document.createElement('tr');
+        tr.setAttribute('data-book-id', book.id);
+        tr.innerHTML = `
+            <td class="stt align-middle"></td>
+            <td class="align-middle">
+                <input type="hidden" name="book_id[]" value="${book.id}" />
+                ${book.name} <small class="text-muted">(${book.barcode})</small>
+            </td>
+            <td class="align-middle">${book.category_name}</td>
+            <td>
+                <input type="number" name="quantity[]" class="form-control qty-input text-center"
+                       value="1" min="1" max="${book.quantity}" onchange="calcTotal()" required />
+            </td>
+            <td class="align-middle price-cell" data-price="${book.price}">
+                ${new Intl.NumberFormat().format(book.price)} VNĐ
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeReceiptRow(this)">X</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        reIndexReceipt();
+        calcTotal();
+    }
+
+    function addManualRow() {
+        if (BOOKS_DATA.length === 0) return;
+        let b = BOOKS_DATA[0];
+        addOrIncrementBookRow({
+            id: b.id,
+            barcode: b.barcode,
+            name: b.name,
+            category_name: b.category,
+            price: b.price,
+            quantity: b.stock
+        });
+    }
+
+    function removeReceiptRow(btn) {
+        btn.closest('tr').remove();
+        reIndexReceipt();
+        calcTotal();
+    }
+
+    function reIndexReceipt() {
+        document.querySelectorAll('#receiptBody tr').forEach((tr, i) => {
+            tr.querySelector('.stt').innerText = i + 1;
+        });
+    }
+
+    function calcTotal() {
+        let total = 0;
+        document.querySelectorAll('#receiptBody tr').forEach(tr => {
+            let qty = parseInt(tr.querySelector('.qty-input').value) || 0;
+            let price = parseFloat(tr.querySelector('.price-cell').dataset.price) || 0;
+            total += qty * price;
+        });
+        document.getElementById('totalBill').innerText = new Intl.NumberFormat().format(total);
+    }
+</script>
+{% endblock %}
