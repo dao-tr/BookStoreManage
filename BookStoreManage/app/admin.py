@@ -45,6 +45,9 @@ class BookView(AuthenticatedModelView):
         else:
             model.image = 'https://via.placeholder.com/150'
 
+                 #HOÀN TẤT VIỆC LƯU VÀO DB
+        super().on_model_change(form, model, is_created)
+
 
 # YC 1: Nhập sách
 class ImportBookView(BaseView):

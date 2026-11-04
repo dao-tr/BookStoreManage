@@ -1,8 +1,9 @@
 from flask import render_template, request, redirect, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from app import app, db, login, utils, admin
-from app.models import Book, Receipt, ReceiptDetail, PaymentMethod, OrderStatus
+from app.models import Book, Receipt, ReceiptDetail, PaymentMethod, OrderStatus, User, UserRole
 from datetime import datetime
+import hashlib
 
 
 @login.user_loader
@@ -62,6 +63,45 @@ def admin_login():
     if user:
         login_user(user)
     return redirect('/admin')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    err_msg = ''
+    success_msg = ''
+    if request.method == 'POST':
+        name = request.form.get('name')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Kiểm tra mật khẩu xác nhận
+        if password != confirm_password:
+            err_msg = 'Mật khẩu nhập lại không khớp!'
+        else:
+            # Kiểm tra xem username đã tồn tại chưa
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                err_msg = 'Tên đăng nhập này đã có người sử dụng!'
+            else:
+                # Mã hóa mật khẩu sang MD5 đúng chuẩn hệ thống
+                password_hashed = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
+
+                # Tạo user mới với quyền khách hàng (USER)
+                new_user = User(
+                    name=name,
+                    username=username,
+                    password=password_hashed,
+                    user_role=UserRole.USER
+                )
+                db.session.add(new_user)
+                db.session.commit()
+                success_msg = 'Đăng ký tài khoản thành công!'
+
+    return render_template('register.html', err_msg=err_msg, success_msg=success_msg)
+
+
+
 
 
 @app.route('/cart')
