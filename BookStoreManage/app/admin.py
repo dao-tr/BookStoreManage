@@ -197,6 +197,64 @@ class StatsView(BaseView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.user_role == UserRole.ADMIN
 
+class ReceiptView(AuthenticatedModelView):
+    column_list = [
+        'id', 'customer_name', 'created_date', 'payment_method',
+        'status', 'free_shipping', 'details_info', 'total_amount', 'staff'
+    ]
+    column_searchable_list = ['customer_name', 'delivery_address']
+    column_filters = ['created_date', 'status', 'payment_method', 'free_shipping']
+    column_default_sort = ('created_date', True)
+    can_create = False
+    can_view_details = True
+    can_export = True
+
+    column_labels = {
+        'id': 'Mã HĐ',
+        'customer_name': 'Khách hàng',
+        'created_date': 'Ngày lập',
+        'payment_method': 'Hình thức TT',
+        'status': 'Trạng thái',
+        'free_shipping': 'Giao miễn phí',
+        'details_info': 'Chi tiết sách mua',
+        'total_amount': 'Tổng tiền',
+        'staff': 'NV Thanh toán',
+        'delivery_address': 'Địa chỉ giao'
+    }
+
+    def _format_details(view, context, model, name):
+        if not model.details:
+            return ''
+        items = [
+            f"• {d.book.name} (SL: <b>{d.quantity}</b> - Giá: {d.unit_price:,.0f}đ)"
+            for d in model.details if d.book
+        ]
+        return Markup("<br>".join(items))
+
+    def _format_total(view, context, model, name):
+        total = sum(d.quantity * d.unit_price for d in model.details)
+        return Markup(f"<b class='text-danger'>{total:,.0f} VNĐ</b>")
+
+    column_formatters = {
+        'details_info': _format_details,
+        'total_amount': _format_total
+    }
+
+
+class ReceiptDetailView(AuthenticatedModelView):
+    column_list = ['id', 'receipt_id', 'book', 'quantity', 'unit_price']
+    column_filters = ['receipt_id', 'book_id']
+    can_create = False
+    can_export = True
+
+    column_labels = {
+        'id': 'ID',
+        'receipt_id': 'Mã Hóa Đơn',
+        'book': 'Tên sách',
+        'quantity': 'Số lượng',
+        'unit_price': 'Đơn giá bán'
+    }
+
 
 class LogoutView(BaseView):
     @expose('/')
@@ -215,5 +273,7 @@ admin.add_view(AuthenticatedModelView(Rule, db.session, name='Quy định'))
 admin.add_view(AuthenticatedModelView(User, db.session, name='User'))
 admin.add_view(ImportBookView(name='Nhập sách (Kho)', endpoint='importbook'))
 admin.add_view(CreateReceiptView(name='Lập HĐ Bán sách', endpoint='createreceipt'))
+admin.add_view(ReceiptView(Receipt, db.session, name='Hóa đơn', endpoint='receipt_admin'))
+admin.add_view(ReceiptDetailView(ReceiptDetail, db.session, name='Chi tiết HĐ', endpoint='receipt_detail_admin'))
 admin.add_view(StatsView(name='Thống kê - Báo cáo', endpoint='stats'))
 admin.add_view(LogoutView(name='Đăng xuất'))
