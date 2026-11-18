@@ -13,6 +13,7 @@ from wtforms import FileField
 from markupsafe import Markup
 
 
+
 class AuthenticatedModelView(ModelView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.user_role == UserRole.ADMIN
@@ -266,7 +267,16 @@ class LogoutView(BaseView):
         return current_user.is_authenticated
 
 
+# Tạo View dẫn về trang chủ
+class HomeView(BaseView):
+    @expose('/')
+    def index(self):
+        return redirect('/')
+
+
+# Khởi tạo Admin duy nhất ở cuối file
 admin = Admin(app=app, name='QUẢN LÝ NHÀ SÁCH')
+admin.add_view(HomeView(name='🌐 Về trang chủ', endpoint='home'))
 admin.add_view(AuthenticatedModelView(Category, db.session, name='Thể loại'))
 admin.add_view(BookView(Book, db.session, name='Sách'))
 admin.add_view(AuthenticatedModelView(Rule, db.session, name='Quy định'))
