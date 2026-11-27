@@ -14,9 +14,9 @@ BookStoreManage là phần mềm hỗ trợ quản lý hoạt động của mộ
 
 | STT | Họ và tên | MSSV | Vai trò | GitHub |
 |-----|-----------|------|---------|--------|
-| 1 | Trần Minh Đạo | [MSSV] | Trưởng nhóm | [@dao-tr](https://github.com/dao-tr) |
-| 2 | Nguyễn Thành Trung | [MSSV] | Thành viên | [@username] |
-| 3 | Trần Anh Kiệt | [MSSV] | Thành viên | [@username] |
+| 1 | Trần Minh Đạo | 1951012015 | Trưởng nhóm | [@dao-tr](https://github.com/dao-tr) |
+| 2 | Nguyễn Thành Trung | 2451052272 | Thành viên | [@username] |
+| 3 | Trần Anh Kiệt | 2451052133 | Thành viên | [@username] |
 
 ## 3. Phân chia công việc
 
